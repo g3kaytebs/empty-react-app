@@ -34,8 +34,8 @@ steps:
     Destination: 'AzureVMs'
     ResourceGroup: 'snapshot'
     MachineNames: 'TebsDemoserver'
-    AdminUserName: $(AdminUsername)
-    AdminPassword: 'escalation2025!!'
+    AdminUserName: '$(AdminUsername)'
+    AdminPassword: '$(AdminPassword)'
     TargetPath: 'C:\\inetpub\\testsitecicd'
   displayName: 'Copy files to Azure VM'
 
