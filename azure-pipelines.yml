@@ -1,0 +1,54 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'windows-latest'
+
+steps:
+- task: NodeTool@0
+  inputs:
+    versionSpec: '14.x'
+  displayName: 'Install Node.js'
+
+- script: |
+    npm install
+    npm run build
+  displayName: 'npm install and build'
+
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(System.DefaultWorkingDirectory)/build'
+    includeRootFolder: false
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+  displayName: 'Archive build output'
+
+- publish: $(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip
+  artifact: drop
+  displayName: 'Publish Artifact'
+
+- task: AzureFileCopy@4
+  inputs:
+    SourcePath: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+    azureSubscription: 'a45b284a-cdab-4545-9c4c-9491b8febc69'
+    Destination: 'AzureVMs'
+    ResourceGroup: 'snapshot'
+    MachineNames: 'TebsDemoserver'
+    AdminUserName: 'toi_ri_admin'
+    AdminPassword: 'escalation2025!!'
+    TargetPath: 'C:\\inetpub\\testsitecicd'
+  displayName: 'Copy files to Azure VM'
+
+- task: AzurePowerShell@5
+  inputs:
+    azureSubscription: 'a45b284a-cdab-4545-9c4c-9491b8febc69'
+    ScriptType: 'InlineScript'
+    Inline: |
+      $zipPath = "C:\\inetpub\\wwwroot\\$"
+      $extractPath = "C:\\inetpub\\wwwroot\\reactapp"
+      New-Item -ItemType Directory -Path $extractPath
+      Add-Type -AssemblyName System.IO.Compression.FileSystem
+      [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $extractPath)
+      Remove-Item -Path $zipPath
+    azurePowerShellVersion: 'LatestVersion'
+  displayName: 'Extract files on Azure VM'
